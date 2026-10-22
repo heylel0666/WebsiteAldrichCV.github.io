@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://heylel0666.github.io/WebsiteAldrichCV.github.io/sitemap.xml
