@@ -309,11 +309,11 @@
     if (!el) return;
 
     var phrases = [
-      "museum apps",
-      "fullstack web apps",
+      "workflow automations",
+      "API integrations",
       "UX & UI designs",
-      "brand identities",
-      "2D & 3D animations",
+      "CRM & ticketing flows",
+      "system automations",
     ];
 
     if (prefersReducedMotion) {
