@@ -992,6 +992,14 @@
           case "boom":
             boom({ clientX: window.innerWidth / 2, clientY: window.innerHeight / 2 });
             break;
+          case "game":
+            // open mini game modal
+            var mg = document.querySelector("#game-modal");
+            if (mg) { mg.classList.add("is-open"); mg.setAttribute("aria-hidden","false"); }
+            break;
+          case "tamagotchi":
+            window.open("tamagotchi/index.html", "_blank", "noopener");
+            break;
         }
       });
     });
