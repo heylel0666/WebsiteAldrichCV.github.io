@@ -1112,6 +1112,9 @@
       });
     }
 
+    // expose confetti for terminal/easter eggs
+    window.launchConfetti = launchConfetti;
+    window.toggleParty = toggleParty;
     var typed = "";
     document.addEventListener("keydown", function (e) {
       if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT")) return;
@@ -1132,6 +1135,354 @@
     style.textContent = ".confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:9994;}";
     document.head.appendChild(style);
   })();
+
+  /* ----------------------------------------------------------------------
+     Terminal
+     ---------------------------------------------------------------------- */
+  (function terminal() {
+    var output = $("#term-output");
+    var input = $("#term-input");
+    if (!output || !input) return;
+
+    var commands = {
+      help: function () {
+        return [
+          "Available commands:",
+          "  help        show this help",
+          "  about       who I am",
+          "  skills      tech & tools",
+          "  projects    selected work",
+          "  experience  career timeline",
+          "  contact     how to reach me",
+          "  socials     links",
+          "  theme <name>  switch theme (default|cyber|sunset|forest|ocean|candy)",
+          "  clear       clear the screen",
+          "  konami      🎉",
+          "  sudo hire   ???",
+        ].join("\n");
+      },
+      about: function () {
+        return [
+          "Aldrich O. De Leon",
+          "Operations Excellence Supervisor & Systems Automation Specialist",
+          "Quezon City, Philippines · Open to opportunities",
+          "",
+          "I engineer scalable workflows, API integrations and automated pipelines",
+          "that remove operational bottlenecks — backed by UX/UI, graphic design",
+          "and motion graphics.",
+        ].join("\n");
+      },
+      skills: function () {
+        return [
+          "Automation & Ops: Pipedream, Cloudflare Workers, Freshdesk Omni, Bitrix24, UAT",
+          "Development: HTML/CSS, JavaScript, Java, Python, REST APIs, Android Studio",
+          "UX/UI & Design: Figma, Photoshop, Illustrator, Premiere Pro, After Effects, Blender",
+          "Management: cross-functional coordination, process mapping, project management",
+        ].join("\n");
+      },
+      projects: function () {
+        return [
+          "1. Cebu Museum Interactive Map — Python/Java/HTML5 — Fullstack + UX/UI",
+          "2. Voyage to Heritage — Android Studio — Fullstack + UX/UI",
+          "3. EatGridients App — Firebase/MySQL/Jetpack Compose — PM + UX/UI + Fullstack",
+          "4. PETMOKO — mobile game — Animator/Background Artist/Programmer",
+          "5. Art Gallery (React), Sales Dashboard (MySQL/Firebase), Capstone film, knOWLedge",
+          "",
+          "→ scroll to #projects for visuals",
+        ].join("\n");
+      },
+      experience: function () {
+        return [
+          "Apr 2025 – Present  Operations Excellence Supervisor — Cepat Kredit Financing Inc.",
+          "Apr 2024 – Mar 2025 Marketing Supervisor — Beesee Global, Quezon City",
+          "May 2022 – 2024     UX/UI Developer — BSTech Solution",
+        ].join("\n");
+      },
+      contact: function () {
+        return [
+          "Email: aldrichdlion@gmail.com",
+          "Phone: +63 962 525 1351",
+          "Location: Quezon City, Philippines",
+          "GitHub: https://github.com/heylel0666",
+          "LinkedIn: https://www.linkedin.com/in/aldrich-de-leon-9385481a5/",
+        ].join("\n");
+      },
+      socials: function () {
+        return "github.com/heylel0666 · linkedin.com/in/aldrich-de-leon-9385481a5 · facebook.com/ArtInHel";
+      },
+      clear: function () {
+        output.innerHTML = "";
+        return null;
+      },
+      konami: function () {
+        document.body.classList.add("is-party");
+        if (typeof launchConfetti === "function") launchConfetti({ count: 300 });
+        setTimeout(function () { document.body.classList.remove("is-party"); }, 9000);
+        return "🎉 PARTY MODE ACTIVATED";
+      },
+      "sudo hire": function () {
+        return "Permission granted. Sending offer letter… (just kidding — email me!)";
+      },
+    };
+
+    function printLine(text, cls) {
+      var line = document.createElement("div");
+      line.className = "terminal__line" + (cls ? " " + cls : "");
+      line.textContent = text;
+      output.appendChild(line);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function run(cmd) {
+      var trimmed = cmd.trim();
+      if (!trimmed) return;
+      printLine("$ " + trimmed, "terminal__line--cmd");
+
+      var themeMatch = trimmed.match(/^theme\s+(\w+)$/i);
+      if (themeMatch) {
+        var name = themeMatch[1].toLowerCase();
+        var valid = ["default", "cyber", "sunset", "forest", "ocean", "candy"];
+        if (valid.indexOf(name) === -1) {
+          printLine("Unknown theme: " + name + ". Try: " + valid.join(", "), "terminal__line--err");
+          return;
+        }
+        applyThemePreset(name);
+        printLine("Theme switched to " + name, "terminal__line--ok");
+        return;
+      }
+
+      var fn = commands[trimmed.toLowerCase()];
+      if (!fn) {
+        printLine("command not found: " + trimmed + ". Type 'help'.", "terminal__line--err");
+        return;
+      }
+      var result = fn();
+      if (result === null) return;
+      String(result).split("\n").forEach(function (l) {
+        printLine(l, "terminal__line--info");
+      });
+    }
+
+    function applyThemePreset(name) {
+      document.body.classList.remove("theme-cyber", "theme-sunset", "theme-forest", "theme-ocean", "theme-candy");
+      if (name !== "default") document.body.classList.add("theme-" + name);
+      $$(".swatch").forEach(function (s) {
+        s.classList.toggle("is-active", s.getAttribute("data-theme-preset") === name);
+      });
+      try { localStorage.setItem("theme-preset", name); } catch (e) {}
+    }
+
+    window.applyThemePreset = applyThemePreset;
+
+    printLine("Welcome to aldrich.sh — type 'help' to begin.", "terminal__line--ok");
+    printLine("", "");
+
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        run(input.value);
+        input.value = "";
+      } else if (e.key === "Tab") {
+        e.preventDefault();
+        var val = input.value.trim().toLowerCase();
+        var keys = Object.keys(commands).concat(["theme"]);
+        var match = keys.filter(function (k) { return k.indexOf(val) === 0; });
+        if (match.length === 1) input.value = match[0];
+      }
+    });
+
+    var stored = null;
+    try { stored = localStorage.getItem("theme-preset"); } catch (e) {}
+    if (stored) applyThemePreset(stored);
+    else {
+      var first = $(".swatch");
+      if (first) first.classList.add("is-active");
+    }
+
+    $(".terminal").addEventListener("click", function () {
+      input.focus();
+    });
+  })();
+
+  /* ----------------------------------------------------------------------
+     Theme swatches
+     ---------------------------------------------------------------------- */
+  (function themeSwatches() {
+    $$(".swatch").forEach(function (s) {
+      s.addEventListener("click", function () {
+        var name = s.getAttribute("data-theme-preset");
+        if (window.applyThemePreset) window.applyThemePreset(name);
+      });
+    });
+  })();
+
+  /* ----------------------------------------------------------------------
+     Mini game
+     ---------------------------------------------------------------------- */
+  (function miniGame() {
+    var modal = $("#game-modal");
+    if (!modal) return;
+    var canvas = $("#game-canvas");
+    var ctx = canvas.getContext("2d");
+    var scoreEl = $("#game-score");
+    var livesEl = $("#game-lives");
+    var startBtn = $("#game-start");
+    var running = false;
+    var raf = null;
+    var basketX = canvas.width / 2;
+    var items = [];
+    var score = 0;
+    var lives = 3;
+    var spawnTimer = 0;
+    var speed = 2.2;
+
+    function open() {
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+      reset();
+      draw();
+    }
+    function close() {
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+      stop();
+    }
+    modal.querySelectorAll("[data-close-game]").forEach(function (el) {
+      el.addEventListener("click", close);
+    });
+
+    function reset() {
+      items = [];
+      score = 0;
+      lives = 3;
+      speed = 2.2;
+      spawnTimer = 0;
+      scoreEl.textContent = "0";
+      livesEl.textContent = "3";
+      running = false;
+      if (raf) cancelAnimationFrame(raf);
+      raf = null;
+    }
+
+    function start() {
+      reset();
+      running = true;
+      startBtn.textContent = "Restart";
+      loop();
+    }
+
+    function stop() {
+      running = false;
+      if (raf) cancelAnimationFrame(raf);
+      raf = null;
+    }
+
+    function spawn() {
+      var types = ["{ }", "</>", "fn()", "=>", "[]", "&&", "npm", "git"];
+      items.push({
+        x: 40 + Math.random() * (canvas.width - 80),
+        y: -20,
+        vy: speed + Math.random() * 1.2,
+        label: types[Math.floor(Math.random() * types.length)],
+        color: ["#6366f1", "#ec4899", "#22d3ee", "#facc15", "#34d399"][Math.floor(Math.random() * 5)],
+        caught: false,
+      });
+    }
+
+    function loop() {
+      if (!running) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#0b0f1a";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      spawnTimer++;
+      if (spawnTimer > 55) {
+        spawn();
+        spawnTimer = 0;
+      }
+
+      for (var i = items.length - 1; i >= 0; i--) {
+        var it = items[i];
+        it.y += it.vy;
+        if (!it.caught && it.y > canvas.height - 40 && Math.abs(it.x - basketX) < 46) {
+          it.caught = true;
+          score += 10;
+          scoreEl.textContent = String(score);
+          items.splice(i, 1);
+          continue;
+        }
+        if (it.y > canvas.height + 20) {
+          items.splice(i, 1);
+          lives--;
+          livesEl.textContent = String(lives);
+          if (lives <= 0) {
+            running = false;
+            startBtn.textContent = "Play again";
+            setTimeout(function () { drawGameOver(); }, 50);
+            return;
+          }
+          continue;
+        }
+        ctx.font = "bold 14px monospace";
+        ctx.fillStyle = it.color;
+        ctx.textAlign = "center";
+        ctx.fillText(it.label, it.x, it.y);
+      }
+
+      ctx.fillStyle = "#6366f1";
+      ctx.fillRect(basketX - 40, canvas.height - 28, 80, 12);
+      ctx.fillStyle = "#ec4899";
+      ctx.fillRect(basketX - 30, canvas.height - 40, 60, 12);
+
+      raf = window.requestAnimationFrame(loop);
+    }
+
+    function draw() {
+      ctx.fillStyle = "#0b0f1a";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#97a1bd";
+      ctx.font = "16px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("Press Start to play", canvas.width / 2, canvas.height / 2);
+    }
+
+    function drawGameOver() {
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 28px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2 - 10);
+      ctx.font = "16px system-ui";
+      ctx.fillText("Final score: " + score, canvas.width / 2, canvas.height / 2 + 20);
+    }
+
+    canvas.addEventListener("mousemove", function (e) {
+      var rect = canvas.getBoundingClientRect();
+      var scaleX = canvas.width / rect.width;
+      basketX = (e.clientX - rect.left) * scaleX;
+      basketX = Math.max(40, Math.min(canvas.width - 40, basketX));
+    });
+    canvas.addEventListener("touchmove", function (e) {
+      e.preventDefault();
+      var rect = canvas.getBoundingClientRect();
+      var scaleX = canvas.width / rect.width;
+      basketX = (e.touches[0].clientX - rect.left) * scaleX;
+      basketX = Math.max(40, Math.min(canvas.width - 40, basketX));
+    }, { passive: false });
+
+    startBtn.addEventListener("click", start);
+
+    var gameBtn = document.querySelector('[data-action="game"]');
+    if (gameBtn) {
+      gameBtn.addEventListener("click", function () {
+        open();
+      });
+    }
+  })();
+
+  /* launchConfetti bridge for terminal konami */
+  /* (launchConfetti is scoped; expose via window) */
 
   (function year() {
     var el = $("#year");
