@@ -15,6 +15,98 @@
   var prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ----------------------------------------------------------------------
+     Dialogs — scroll lock, focus handling, Escape to close
+     ---------------------------------------------------------------------- */
+  var openDialogs = [];
+  var FOCUSABLE =
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])';
+
+  function focusables(modal) {
+    return $$(FOCUSABLE, modal).filter(function (el) {
+      return el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length;
+    });
+  }
+
+  function lockScroll() {
+    if (!openDialogs.length) return;
+    var gap = window.innerWidth - document.documentElement.clientWidth;
+    document.body.classList.add("is-locked");
+    document.body.style.paddingRight = gap > 0 ? gap + "px" : "";
+  }
+
+  function unlockScroll() {
+    document.body.classList.remove("is-locked");
+    document.body.style.paddingRight = "";
+  }
+
+  function openDialog(modal, trigger) {
+    if (!modal || modal.classList.contains("is-open")) return;
+    modal.__opener = trigger && typeof trigger.focus === "function" ? trigger : document.activeElement;
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+    openDialogs.push(modal);
+    lockScroll();
+
+    var target = modal.querySelector("[data-autofocus]") || focusables(modal)[0] || modal;
+    if (target && target.focus) {
+      if (!target.hasAttribute("tabindex") && target === modal) target.setAttribute("tabindex", "-1");
+      window.setTimeout(function () {
+        target.focus({ preventScroll: true });
+      }, 30);
+    }
+  }
+
+  function closeDialog(modal) {
+    if (!modal) return;
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden", "true");
+    var index = openDialogs.indexOf(modal);
+    if (index > -1) openDialogs.splice(index, 1);
+    if (!openDialogs.length) unlockScroll();
+
+    var opener = modal.__opener;
+    modal.__opener = null;
+    if (opener && document.contains(opener) && typeof opener.focus === "function") {
+      window.setTimeout(function () {
+        opener.focus({ preventScroll: true });
+      }, 10);
+    }
+  }
+
+  document.addEventListener("keydown", function (e) {
+    var modal = openDialogs[openDialogs.length - 1];
+    if (!modal) return;
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      var closeBtn = modal.querySelector(".game-modal__close");
+      if (closeBtn) closeBtn.click();
+      else closeDialog(modal);
+      return;
+    }
+
+    if (e.key !== "Tab") return;
+
+    var items = focusables(modal);
+    if (!items.length) {
+      e.preventDefault();
+      return;
+    }
+
+    var first = items[0];
+    var last = items[items.length - 1];
+    var active = document.activeElement;
+
+    if (e.shiftKey && (active === first || !modal.contains(active))) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && (active === last || !modal.contains(active))) {
+      e.preventDefault();
+      first.focus();
+    }
+  });
+
+  /* ----------------------------------------------------------------------
      Theme (dark / light) — persists to localStorage, respects OS default
      ---------------------------------------------------------------------- */
   (function theme() {
@@ -612,9 +704,13 @@
     resize();
     makeParticles();
 
+    var resizeTimer = null;
     window.addEventListener("resize", function () {
-      resize();
-      makeParticles();
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        resize();
+        makeParticles();
+      }, 150);
     });
 
     hero.addEventListener("mousemove", function (e) {
@@ -627,10 +723,13 @@
       mouse.y = -9999;
     });
 
+    var running = false;
+    var inView = true;
+
     function step() {
-      var rect = hero.getBoundingClientRect();
-      var w = rect.width;
-      var h = rect.height;
+      if (!running) return;
+      var w = canvas.width / dpr;
+      var h = canvas.height / dpr;
       ctx.clearRect(0, 0, w, h);
 
       for (var i = 0; i < particles.length; i++) {
@@ -677,7 +776,28 @@
 
       window.requestAnimationFrame(step);
     }
-    step();
+
+    function sync() {
+      var shouldRun = inView && !document.hidden;
+      if (shouldRun === running) return;
+      running = shouldRun;
+      if (running) window.requestAnimationFrame(step);
+    }
+
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(
+        function (entries) {
+          inView = entries[0].isIntersecting;
+          sync();
+        },
+        { threshold: 0 }
+      ).observe(hero);
+    }
+
+    document.addEventListener("visibilitychange", sync);
+
+    running = true;
+    window.requestAnimationFrame(step);
   })();
 
   /* ----------------------------------------------------------------------
@@ -874,9 +994,15 @@
       if (!panel.contains(e.target) && !btn.contains(e.target)) togglePanel(false);
     });
 
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape" || !panel.classList.contains("is-open")) return;
+      togglePanel(false);
+      btn.focus();
+    });
+
     // space game launcher (global)
-    var openSpaceGame = function () {
-      if (window.openSpaceGameImpl) window.openSpaceGameImpl();
+    var openSpaceGame = function (trigger) {
+      if (window.openSpaceGameImpl) window.openSpaceGameImpl(trigger);
     };
 
     var partyTimer = null;
@@ -895,7 +1021,8 @@
 
     function prepareScatter(el) {
       if (el.dataset.scattered === "1") return;
-      var text = el.textContent;
+      el.dataset.originalHtml = el.innerHTML;
+      var text = el.textContent.replace(/\s+/g, " ").trim();
       el.textContent = "";
       var frag = document.createDocumentFragment();
       for (var i = 0; i < text.length; i++) {
@@ -908,23 +1035,29 @@
       el.dataset.scattered = "1";
     }
 
+    function restoreScatter(el) {
+      if (el.dataset.originalHtml == null) return;
+      el.innerHTML = el.dataset.originalHtml;
+      delete el.dataset.originalHtml;
+      el.dataset.scattered = "0";
+    }
+
     var scatterActive = false;
     function scatterTitles() {
       scatterActive = !scatterActive;
       $$(".section__title, .hero__title").forEach(function (title) {
+        if (!scatterActive) {
+          restoreScatter(title);
+          return;
+        }
         prepareScatter(title);
         var chars = $$(".scatter-char", title);
         chars.forEach(function (ch) {
-          if (scatterActive) {
-            var dx = (Math.random() - 0.5) * 80;
-            var dy = (Math.random() - 0.5) * 60;
-            var rot = (Math.random() - 0.5) * 40;
-            ch.style.transform = "translate(" + dx + "px," + dy + "px) rotate(" + rot + "deg)";
-            ch.classList.add("is-scattered");
-          } else {
-            ch.style.transform = "";
-            ch.classList.remove("is-scattered");
-          }
+          var dx = (Math.random() - 0.5) * 80;
+          var dy = (Math.random() - 0.5) * 60;
+          var rot = (Math.random() - 0.5) * 40;
+          ch.style.transform = "translate(" + dx + "px," + dy + "px) rotate(" + rot + "deg)";
+          ch.classList.add("is-scattered");
         });
       });
     }
@@ -973,9 +1106,10 @@
     $$(".fun-action").forEach(function (a) {
       a.addEventListener("click", function () {
         var action = a.getAttribute("data-action");
+        togglePanel(false);
         switch (action) {
           case "space":
-            openSpaceGame();
+            openSpaceGame(btn);
             break;
           case "party":
             toggleParty();
@@ -993,19 +1127,17 @@
             boom({ clientX: window.innerWidth / 2, clientY: window.innerHeight / 2 });
             break;
           case "game":
-            // open mini game modal
-            var mg = document.querySelector("#game-modal");
-            if (mg) { mg.classList.add("is-open"); mg.setAttribute("aria-hidden","false"); }
+            if (window.openMiniGameImpl) window.openMiniGameImpl(btn);
             break;
           case "tamagotchi":
             var im = document.querySelector("#iframe-modal");
             var iframe = document.querySelector("#game-iframe");
-            var title = document.querySelector("#iframe-title");
+            var iTitle = document.querySelector("#iframe-title");
             if (im && iframe) {
-              if (title) title.textContent = "Tamagotchi";
+              if (iTitle) iTitle.textContent = "Tamagotchi";
+              iframe.title = "Tamagotchi game";
               iframe.src = "tamagotchi/index.html";
-              im.classList.add("is-open");
-              im.setAttribute("aria-hidden", "false");
+              openDialog(im, btn);
             }
             break;
         }
@@ -1193,7 +1325,9 @@
       document.body.classList.remove("theme-cyber", "theme-sunset", "theme-forest", "theme-ocean", "theme-candy");
       if (name !== "default") document.body.classList.add("theme-" + name);
       $$(".swatch").forEach(function (s) {
-        s.classList.toggle("is-active", s.getAttribute("data-theme-preset") === name);
+        var active = s.getAttribute("data-theme-preset") === name;
+        s.classList.toggle("is-active", active);
+        s.setAttribute("aria-pressed", String(active));
       });
       try { localStorage.setItem("theme-preset", name); } catch (e) {}
     }
@@ -1217,12 +1351,9 @@
     });
 
     var stored = null;
+    var validPresets = ["default", "cyber", "sunset", "forest", "ocean", "candy"];
     try { stored = localStorage.getItem("theme-preset"); } catch (e) {}
-    if (stored) applyThemePreset(stored);
-    else {
-      var first = $(".swatch");
-      if (first) first.classList.add("is-active");
-    }
+    applyThemePreset(stored && validPresets.indexOf(stored) > -1 ? stored : "default");
 
     $(".terminal").addEventListener("click", function () {
       input.focus();
@@ -1261,17 +1392,17 @@
     var spawnTimer = 0;
     var speed = 2.2;
 
-    function open() {
-      modal.classList.add("is-open");
-      modal.setAttribute("aria-hidden", "false");
+    function open(trigger) {
+      openDialog(modal, trigger);
       reset();
       draw();
     }
     function close() {
-      modal.classList.remove("is-open");
-      modal.setAttribute("aria-hidden", "true");
       stop();
+      closeDialog(modal);
     }
+
+    window.openMiniGameImpl = open;
     modal.querySelectorAll("[data-close-game]").forEach(function (el) {
       el.addEventListener("click", close);
     });
@@ -1503,16 +1634,14 @@
       stars.push({ x: Math.random() * W, y: Math.random() * H, s: Math.random() * 1.5 + 0.3, v: Math.random() * 1.2 + 0.3 });
     }
 
-    function open() {
-      modal.classList.add("is-open");
-      modal.setAttribute("aria-hidden", "false");
+    function open(trigger) {
+      openDialog(modal, trigger);
       reset();
       drawIdle();
     }
     function close() {
-      modal.classList.remove("is-open");
-      modal.setAttribute("aria-hidden", "true");
       stop();
+      closeDialog(modal);
     }
     modal.querySelectorAll("[data-close-space]").forEach(function (el) {
       el.addEventListener("click", close);
@@ -1547,6 +1676,7 @@
       running = false;
       if (raf) cancelAnimationFrame(raf);
       raf = null;
+      keys = {};
     }
 
     function spawnEnemy() {
@@ -1742,7 +1872,10 @@
       player.targetY = (e.touches[0].clientY - rect.top) * scaleY;
     }, { passive: false });
 
+    var gameKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "w", "W", "s", "S", "a", "A", "d", "D"];
     window.addEventListener("keydown", function (e) {
+      if (modal.getAttribute("aria-hidden") !== "false") return;
+      if (gameKeys.indexOf(e.key) > -1) e.preventDefault();
       keys[e.key] = true;
     });
     window.addEventListener("keyup", function (e) {
@@ -1765,8 +1898,7 @@
     if (!modal) return;
     modal.querySelectorAll("[data-close-iframe]").forEach(function (el) {
       el.addEventListener("click", function () {
-        modal.classList.remove("is-open");
-        modal.setAttribute("aria-hidden", "true");
+        closeDialog(modal);
         var iframe = $("#game-iframe");
         if (iframe) iframe.src = "about:blank";
       });

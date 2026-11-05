@@ -12,7 +12,16 @@ import * as THREE from "three";
 
   var prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  // Some browsers / devices have WebGL disabled. Fail quietly instead of
+  // throwing and leaving the hero visual half-initialised.
+  var renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  } catch (err) {
+    return;
+  }
+  if (!renderer || !renderer.getContext()) return;
+
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setSize(hero.clientWidth, hero.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -95,31 +104,97 @@ import * as THREE from "three";
   function resize() {
     var w = hero.clientWidth;
     var h = hero.clientHeight;
+    if (!w || !h) return;
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
+    if (!running) renderStatic();
   }
-  window.addEventListener("resize", resize);
 
-  var clock = new THREE.Clock();
-  function animate() {
-    var t = clock.getElapsedTime();
-    if (!prefersReducedMotion) {
-      currentRotX += (targetRotX - currentRotX) * 0.05;
-      currentRotY += (targetRotY - currentRotY) * 0.05;
-      knot.rotation.x = t * 0.25 + currentRotX;
-      knot.rotation.y = t * 0.35 + currentRotY + scrollFactor * 0.0004;
-      wire.rotation.copy(knot.rotation);
-      particles.rotation.y = t * 0.04;
-      particles.rotation.x = currentRotX * 0.3;
-      point1.position.x = Math.sin(t * 0.7) * 3;
-      point1.position.y = Math.cos(t * 0.5) * 2;
-      point2.position.x = Math.cos(t * 0.6) * 3;
-    }
+  var resizeTimer = null;
+  window.addEventListener("resize", function () {
+    if (resizeTimer) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(resize, 150);
+  });
+
+  // A single frame — used for the initial paint under reduced motion and
+  // whenever the canvas is resized while the loop is paused.
+  function renderStatic() {
+    knot.rotation.set(0.4, 0.6, 0);
+    wire.rotation.copy(knot.rotation);
+    particles.rotation.set(0, 0, 0);
+    point1.position.set(3, 3, 4);
+    point2.position.set(-3, -2, 3);
     renderer.render(scene, camera);
-    requestAnimationFrame(animate);
   }
-  animate();
+
+  var running = false;
+  var inView = true;
+  var elapsed = 0;
+  var lastTime = 0;
+
+  function tick(now) {
+    if (!running) return;
+
+    if (!lastTime) lastTime = now;
+    var dt = Math.min((now - lastTime) / 1000, 0.1);
+    lastTime = now;
+    elapsed += dt;
+
+    var t = elapsed;
+    currentRotX += (targetRotX - currentRotX) * 0.05;
+    currentRotY += (targetRotY - currentRotY) * 0.05;
+    knot.rotation.x = t * 0.25 + currentRotX;
+    knot.rotation.y = t * 0.35 + currentRotY + scrollFactor * 0.0004;
+    wire.rotation.copy(knot.rotation);
+    particles.rotation.y = t * 0.04;
+    particles.rotation.x = currentRotX * 0.3;
+    point1.position.x = Math.sin(t * 0.7) * 3;
+    point1.position.y = Math.cos(t * 0.5) * 2;
+    point2.position.x = Math.cos(t * 0.6) * 3;
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(tick);
+  }
+
+  function start() {
+    if (running || prefersReducedMotion) return;
+    running = true;
+    lastTime = 0;
+    requestAnimationFrame(tick);
+  }
+
+  function stop() {
+    running = false;
+    lastTime = 0;
+  }
+
+  function sync() {
+    if (prefersReducedMotion) {
+      renderStatic();
+      return;
+    }
+    if (inView && !document.hidden) start();
+    else stop();
+  }
+
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(
+      function (entries) {
+        inView = entries[0].isIntersecting;
+        sync();
+      },
+      { threshold: 0 }
+    ).observe(hero);
+  }
+
+  document.addEventListener("visibilitychange", sync);
+
+  if (prefersReducedMotion) {
+    renderStatic();
+  } else {
+    start();
+  }
 
   // Expose for debugging
   window.__threeScene = { scene: scene, camera: camera, renderer: renderer };
