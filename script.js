@@ -968,7 +968,6 @@
       setTimeout(function () {
         if (flash.parentNode) flash.parentNode.removeChild(flash);
       }, 750);
-      launchConfetti({ count: 60, x: x, y: y });
     }
 
     $$(".fun-action").forEach(function (a) {
