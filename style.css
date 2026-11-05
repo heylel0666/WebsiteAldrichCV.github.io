@@ -2126,7 +2126,18 @@ body::before {
   }
 }
 
-/* ---------- DESIGN PLAYGROUND ---------- */
+.game-modal__panel--wide {
+  width: min(960px, calc(100vw - 2rem));
+  max-height: 90vh;
+}
+
+#game-iframe {
+  width: 100%;
+  height: min(640px, 70vh);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #0b0f1a;
+}
 .playground {
   display: grid;
   grid-template-columns: 1fr 1.1fr;

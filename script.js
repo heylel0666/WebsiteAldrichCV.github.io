@@ -998,7 +998,15 @@
             if (mg) { mg.classList.add("is-open"); mg.setAttribute("aria-hidden","false"); }
             break;
           case "tamagotchi":
-            window.open("tamagotchi/index.html", "_blank", "noopener");
+            var im = document.querySelector("#iframe-modal");
+            var iframe = document.querySelector("#game-iframe");
+            var title = document.querySelector("#iframe-title");
+            if (im && iframe) {
+              if (title) title.textContent = "Tamagotchi";
+              iframe.src = "tamagotchi/index.html";
+              im.classList.add("is-open");
+              im.setAttribute("aria-hidden", "false");
+            }
             break;
         }
       });
@@ -1747,6 +1755,22 @@
 
     var spaceBtn = document.querySelector('[data-action="space"]');
     if (spaceBtn) spaceBtn.addEventListener("click", open);
+  })();
+
+  /* ----------------------------------------------------------------------
+     Iframe game modal close handling
+     ---------------------------------------------------------------------- */
+  (function iframeModal() {
+    var modal = $("#iframe-modal");
+    if (!modal) return;
+    modal.querySelectorAll("[data-close-iframe]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        modal.classList.remove("is-open");
+        modal.setAttribute("aria-hidden", "true");
+        var iframe = $("#game-iframe");
+        if (iframe) iframe.src = "about:blank";
+      });
+    });
   })();
 
   (function year() {
