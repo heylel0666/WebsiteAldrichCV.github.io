@@ -1763,7 +1763,321 @@ a.contact__card:hover {
   }
 }
 
-/* ---------- MOTION / PRINT ---------- */
+/* ---------- CREATIVE ENHANCEMENTS ---------- */
+
+/* Hero particle canvas */
+.hero__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.7;
+}
+
+.hero > .container,
+.hero__stats,
+.hero__scroll {
+  position: relative;
+  z-index: 1;
+}
+
+.hero__glow,
+.hero__grid {
+  z-index: 0;
+}
+
+/* Marquee band */
+.marquee {
+  position: relative;
+  padding-block: 1.5rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-alt);
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.marquee__track {
+  display: flex;
+  width: max-content;
+  animation: marqueeScroll 38s linear infinite;
+}
+
+.marquee:hover .marquee__track {
+  animation-play-state: paused;
+}
+
+.marquee__list {
+  display: flex;
+  align-items: center;
+  gap: 2.25rem;
+  padding-inline: 1.125rem;
+  flex-shrink: 0;
+}
+
+.marquee__list li {
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-dim);
+  white-space: nowrap;
+  position: relative;
+  padding-left: 1.4rem;
+}
+
+.marquee__list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+  transform: translateY(-50%);
+}
+
+@keyframes marqueeScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Custom cursor */
+.cursor {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: normal;
+  opacity: 0;
+  transition: opacity 0.25s var(--ease);
+}
+
+.cursor__dot,
+.cursor__ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+
+.cursor__dot {
+  width: 8px;
+  height: 8px;
+  background: var(--brand-1);
+  box-shadow: 0 0 12px var(--brand-1);
+  transition: width 0.2s var(--ease), height 0.2s var(--ease), opacity 0.2s var(--ease);
+}
+
+.cursor__ring {
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid var(--brand-1);
+  opacity: 0.55;
+  transition: width 0.3s var(--ease), height 0.3s var(--ease), opacity 0.3s var(--ease),
+    border-color 0.3s var(--ease);
+}
+
+.cursor.is-hover .cursor__dot {
+  width: 10px;
+  height: 10px;
+  background: var(--brand-2);
+}
+
+.cursor.is-hover .cursor__ring {
+  width: 56px;
+  height: 56px;
+  opacity: 0.8;
+  border-color: var(--brand-2);
+}
+
+.cursor.is-click .cursor__ring {
+  width: 28px;
+  height: 28px;
+  opacity: 1;
+}
+
+@media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .cursor {
+    display: none !important;
+  }
+}
+
+/* Hide default cursor on fine-pointer devices when custom cursor active */
+@media (hover: hover) and (pointer: fine) {
+  html.has-custom-cursor,
+  html.has-custom-cursor body,
+  html.has-custom-cursor a,
+  html.has-custom-cursor button {
+    cursor: none;
+  }
+}
+
+/* 3D tilt cards */
+.tilt {
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 0.12s ease-out, box-shadow 0.3s var(--ease), border-color 0.3s var(--ease);
+  position: relative;
+  overflow: hidden;
+}
+
+.tilt::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, 0.12),
+    transparent 45%
+  );
+  opacity: 0;
+  transition: opacity 0.3s var(--ease);
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  z-index: 2;
+}
+
+.tilt:hover::after {
+  opacity: 1;
+}
+
+.tilt > * {
+  transform: translateZ(0);
+}
+
+/* Magnetic elements */
+.magnetic {
+  transition: transform 0.25s var(--ease);
+  will-change: transform;
+}
+
+/* Click sparkles */
+.sparkle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9998;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand-1);
+  box-shadow: 0 0 10px var(--brand-1);
+  animation: sparkleBurst 0.7s var(--ease-out) forwards;
+}
+
+@keyframes sparkleBurst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(0);
+  }
+}
+
+/* Floating gradient orbs (contact section) */
+.contact {
+  position: relative;
+}
+
+.contact::before,
+.contact::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.35;
+}
+
+.contact::before {
+  width: 260px;
+  height: 260px;
+  background: var(--brand-1);
+  top: -60px;
+  right: -60px;
+  animation: float 9s ease-in-out infinite;
+}
+
+.contact::after {
+  width: 220px;
+  height: 220px;
+  background: var(--brand-2);
+  bottom: -80px;
+  left: -60px;
+  animation: float 11s ease-in-out infinite 1.5s;
+}
+
+.contact > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Hero name shimmer */
+.hero__name {
+  background-size: 200% 100%;
+  animation: shimmerText 6s linear infinite;
+}
+
+@keyframes shimmerText {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+/* Project card media parallax tilt already; add glare already via .tilt */
+
+/* Film grain texture overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9996;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.7'/%3E%3C/svg%3E");
+}
+.cursor-trail {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9997;
+  opacity: 0.9;
+}
+
+@media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .cursor-trail {
+    display: none !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee__track,
+  .hero__name,
+  .contact::before,
+  .contact::after {
+    animation: none !important;
+  }
+  .sparkle {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -150,6 +150,7 @@
       <section class="hero" id="home">
         <div class="hero__glow" aria-hidden="true"></div>
         <div class="hero__grid" aria-hidden="true"></div>
+        <canvas class="hero__canvas" id="hero-canvas" aria-hidden="true"></canvas>
 
         <div class="container hero__inner">
           <div class="hero__content">
@@ -476,7 +477,49 @@
         </div>
       </section>
 
-      <!-- ================= EXPERIENCE ================= -->
+      <!-- ================= MARQUEE ================= -->
+    <section class="marquee" aria-label="Tools and technologies I work with">
+      <div class="marquee__track">
+        <ul class="marquee__list">
+          <li>System Automation</li>
+          <li>Pipedream</li>
+          <li>Cloudflare Workers</li>
+          <li>Freshdesk Omni</li>
+          <li>Bitrix24</li>
+          <li>REST APIs</li>
+          <li>JavaScript</li>
+          <li>Python</li>
+          <li>Java</li>
+          <li>Figma</li>
+          <li>Photoshop</li>
+          <li>Illustrator</li>
+          <li>After Effects</li>
+          <li>Blender</li>
+          <li>Premiere Pro</li>
+          <li>UX/UI Design</li>
+        </ul>
+        <ul class="marquee__list" aria-hidden="true">
+          <li>System Automation</li>
+          <li>Pipedream</li>
+          <li>Cloudflare Workers</li>
+          <li>Freshdesk Omni</li>
+          <li>Bitrix24</li>
+          <li>REST APIs</li>
+          <li>JavaScript</li>
+          <li>Python</li>
+          <li>Java</li>
+          <li>Figma</li>
+          <li>Photoshop</li>
+          <li>Illustrator</li>
+          <li>After Effects</li>
+          <li>Blender</li>
+          <li>Premiere Pro</li>
+          <li>UX/UI Design</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ================= EXPERIENCE ================= -->
       <section class="section" id="experience">
         <div class="container">
           <header class="section__head reveal">
@@ -838,5 +881,10 @@
     <button class="to-top" id="to-top" type="button" aria-label="Back to top">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6" /></svg>
     </button>
+
+    <div class="cursor" aria-hidden="true">
+      <span class="cursor__dot"></span>
+      <span class="cursor__ring"></span>
+    </div>
   </body>
 </html>

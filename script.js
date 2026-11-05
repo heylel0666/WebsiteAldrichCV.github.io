@@ -506,8 +506,351 @@
   })();
 
   /* ----------------------------------------------------------------------
-     Footer year
+     Creative enhancements: custom cursor
      ---------------------------------------------------------------------- */
+  (function customCursor() {
+    var cursor = $(".cursor");
+    if (!cursor) return;
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    document.documentElement.classList.add("has-custom-cursor");
+
+    var dot = cursor.querySelector(".cursor__dot");
+    var ring = cursor.querySelector(".cursor__ring");
+    var mx = window.innerWidth / 2;
+    var my = window.innerHeight / 2;
+    var rx = mx;
+    var ry = my;
+    var visible = false;
+
+    window.addEventListener("mousemove", function (e) {
+      mx = e.clientX;
+      my = e.clientY;
+      if (!visible) {
+        visible = true;
+        cursor.style.opacity = "1";
+      }
+    });
+
+    window.addEventListener("mouseleave", function () {
+      cursor.style.opacity = "0";
+    });
+
+    window.addEventListener("mouseenter", function () {
+      cursor.style.opacity = "1";
+    });
+
+    // Hover detection
+    function isInteractive(target) {
+      if (!target) return false;
+      return !!target.closest(
+        "a, button, [role='button'], input, textarea, select, .tilt, .chip, .stat, .project, .skill-card"
+      );
+    }
+
+    document.addEventListener("mouseover", function (e) {
+      cursor.classList.toggle("is-hover", isInteractive(e.target));
+    });
+
+    document.addEventListener("mousedown", function () {
+      cursor.classList.add("is-click");
+    });
+    document.addEventListener("mouseup", function () {
+      cursor.classList.remove("is-click");
+    });
+
+    function loop() {
+      rx += (mx - rx) * 0.18;
+      ry += (my - ry) * 0.18;
+      if (dot) dot.style.transform = "translate(" + mx + "px," + my + "px) translate(-50%,-50%)";
+      if (ring) ring.style.transform = "translate(" + rx + "px," + ry + "px) translate(-50%,-50%)";
+      window.requestAnimationFrame(loop);
+    }
+    loop();
+  })();
+
+  /* ----------------------------------------------------------------------
+     Hero particle canvas
+     ---------------------------------------------------------------------- */
+  (function heroParticles() {
+    var canvas = $("#hero-canvas");
+    if (!canvas) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    var ctx = canvas.getContext("2d");
+    var hero = canvas.closest(".hero");
+    var particles = [];
+    var mouse = { x: -9999, y: -9999 };
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    function resize() {
+      var rect = hero.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      canvas.style.width = rect.width + "px";
+      canvas.style.height = rect.height + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function makeParticles() {
+      particles = [];
+      var rect = hero.getBoundingClientRect();
+      var count = Math.max(28, Math.min(70, Math.round((rect.width * rect.height) / 18000)));
+      for (var i = 0; i < count; i++) {
+        particles.push({
+          x: Math.random() * rect.width,
+          y: Math.random() * rect.height,
+          vx: (Math.random() - 0.5) * 0.35,
+          vy: (Math.random() - 0.5) * 0.35,
+          r: Math.random() * 1.6 + 0.6,
+          hue: Math.random() < 0.5 ? 230 : 320,
+        });
+      }
+    }
+
+    resize();
+    makeParticles();
+
+    window.addEventListener("resize", function () {
+      resize();
+      makeParticles();
+    });
+
+    hero.addEventListener("mousemove", function (e) {
+      var rect = hero.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+    });
+    hero.addEventListener("mouseleave", function () {
+      mouse.x = -9999;
+      mouse.y = -9999;
+    });
+
+    function step() {
+      var rect = hero.getBoundingClientRect();
+      var w = rect.width;
+      var h = rect.height;
+      ctx.clearRect(0, 0, w, h);
+
+      for (var i = 0; i < particles.length; i++) {
+        var p = particles[i];
+        // mouse repulsion
+        var dx = p.x - mouse.x;
+        var dy = p.y - mouse.y;
+        var dist = Math.hypot(dx, dy);
+        if (dist < 120 && dist > 0) {
+          var force = (120 - dist) / 120;
+          p.vx += (dx / dist) * force * 0.06;
+          p.vy += (dy / dist) * force * 0.06;
+        }
+        p.vx *= 0.985;
+        p.vy *= 0.985;
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = w;
+        if (p.x > w) p.x = 0;
+        if (p.y < 0) p.y = h;
+        if (p.y > h) p.y = 0;
+
+        // draw particle
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle =
+          p.hue === 230 ? "rgba(99,102,241,0.8)" : "rgba(236,72,153,0.7)";
+        ctx.fill();
+
+        // connections
+        for (var j = i + 1; j < particles.length; j++) {
+          var q = particles[j];
+          var d = Math.hypot(p.x - q.x, p.y - q.y);
+          if (d < 110) {
+            ctx.strokeStyle = "rgba(99,102,241," + (1 - d / 110) * 0.22 + ")";
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(q.x, q.y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      window.requestAnimationFrame(step);
+    }
+    step();
+  })();
+
+  /* ----------------------------------------------------------------------
+     3D tilt + glare on cards
+     ---------------------------------------------------------------------- */
+  (function tiltCards() {
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    var selectors =
+      ".project, .skill-card, .about__facts li, .contact__card, .certs__list li, .timeline__card, .stat";
+    var nodes = $$(selectors);
+    nodes.forEach(function (node) {
+      node.classList.add("tilt");
+
+      node.addEventListener("mousemove", function (e) {
+        var rect = node.getBoundingClientRect();
+        var x = e.clientX - rect.left;
+        var y = e.clientY - rect.top;
+        var px = x / rect.width - 0.5;
+        var py = y / rect.height - 0.5;
+        var rx = (-py * 8).toFixed(2);
+        var ry = (px * 10).toFixed(2);
+        node.style.transform =
+          "perspective(900px) rotateX(" + rx + "deg) rotateY(" + ry + "deg) translateY(-2px)";
+        node.style.setProperty("--mx", x + "px");
+        node.style.setProperty("--my", y + "px");
+      });
+
+      node.addEventListener("mouseleave", function () {
+        node.style.transform = "";
+        node.style.removeProperty("--mx");
+        node.style.removeProperty("--my");
+      });
+    });
+  })();
+
+  /* ----------------------------------------------------------------------
+     Magnetic buttons
+     ---------------------------------------------------------------------- */
+  (function magnetic() {
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    $$(".btn, .hero__socials a, .contact__socials a, .brand__mark").forEach(function (el) {
+      el.classList.add("magnetic");
+      el.addEventListener("mousemove", function (e) {
+        var rect = el.getBoundingClientRect();
+        var x = e.clientX - rect.left - rect.width / 2;
+        var y = e.clientY - rect.top - rect.height / 2;
+        var tx = Math.max(-10, Math.min(10, x * 0.25));
+        var ty = Math.max(-10, Math.min(10, y * 0.25));
+        el.style.transform = "translate(" + tx + "px," + ty + "px)";
+      });
+      el.addEventListener("mouseleave", function () {
+        el.style.transform = "";
+      });
+    });
+  })();
+
+  /* ----------------------------------------------------------------------
+     Click sparkles
+     ---------------------------------------------------------------------- */
+  (function clickSparkles() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    document.addEventListener("click", function (e) {
+      var count = 12;
+      for (var i = 0; i < count; i++) {
+        var s = document.createElement("span");
+        s.className = "sparkle";
+        var angle = (Math.PI * 2 * i) / count;
+        var dist = 28 + Math.random() * 22;
+        var dx = Math.cos(angle) * dist;
+        var dy = Math.sin(angle) * dist;
+        s.style.left = e.clientX + "px";
+        s.style.top = e.clientY + "px";
+        s.style.setProperty("--dx", dx + "px");
+        s.style.setProperty("--dy", dy + "px");
+        // color variation
+        if (Math.random() < 0.5) {
+          s.style.background = "var(--brand-2)";
+          s.style.boxShadow = "0 0 10px var(--brand-2)";
+        } else if (Math.random() < 0.5) {
+          s.style.background = "var(--brand-3)";
+          s.style.boxShadow = "0 0 10px var(--brand-3)";
+        }
+        document.body.appendChild(s);
+        (function (node) {
+          setTimeout(function () {
+            if (node.parentNode) node.parentNode.removeChild(node);
+          }, 750);
+        })(s);
+      }
+    });
+  })();
+
+  /* ----------------------------------------------------------------------
+     Parallax on hero visual (mouse)
+     ---------------------------------------------------------------------- */
+  (function heroParallax() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    var visual = $(".hero__visual");
+    var avatar = $(".hero__avatar");
+    if (!visual || !avatar) return;
+    var chips = $$(".hero__chip");
+
+    visual.addEventListener("mousemove", function (e) {
+      var rect = visual.getBoundingClientRect();
+      var px = (e.clientX - rect.left) / rect.width - 0.5;
+      var py = (e.clientY - rect.top) / rect.height - 0.5;
+      avatar.style.transform = "translate(" + px * -12 + "px," + py * -12 + "px)";
+      chips.forEach(function (c, i) {
+        var factor = (i + 1) * 6;
+        c.style.transform = "translate(" + px * factor + "px," + py * factor + "px)";
+      });
+    });
+    visual.addEventListener("mouseleave", function () {
+      avatar.style.transform = "";
+      chips.forEach(function (c) {
+        c.style.transform = "";
+      });
+    });
+  })();
+
+  /* ----------------------------------------------------------------------
+     Cursor trail (creative)
+     ---------------------------------------------------------------------- */
+  (function cursorTrail() {
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    var canvas = document.createElement("canvas");
+    canvas.className = "cursor-trail";
+    canvas.setAttribute("aria-hidden", "true");
+    document.body.appendChild(canvas);
+    var ctx = canvas.getContext("2d");
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var points = [];
+
+    function resize() {
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = window.innerWidth + "px";
+      canvas.style.height = window.innerHeight + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    window.addEventListener("mousemove", function (e) {
+      points.push({ x: e.clientX, y: e.clientY, age: 0 });
+      if (points.length > 48) points.shift();
+    });
+
+    function step() {
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      for (var i = 0; i < points.length; i++) {
+        var p = points[i];
+        p.age += 1;
+        var life = 1 - p.age / 40;
+        if (life <= 0) continue;
+        var radius = 2 + life * 4;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(99,102,241," + life * 0.55 + ")";
+        ctx.fill();
+      }
+      // remove dead
+      while (points.length && (1 - points[0].age / 40) <= 0) points.shift();
+      window.requestAnimationFrame(step);
+    }
+    step();
+  })();
   (function year() {
     var el = $("#year");
     if (el) el.textContent = String(new Date().getFullYear());
