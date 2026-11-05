@@ -1484,6 +1484,67 @@
   /* launchConfetti bridge for terminal konami */
   /* (launchConfetti is scoped; expose via window) */
 
+  /* ----------------------------------------------------------------------
+     Design playground
+     ---------------------------------------------------------------------- */
+  (function playground() {
+    var color = $("#pg-color");
+    var radius = $("#pg-radius");
+    var spacing = $("#pg-spacing");
+    var blur = $("#pg-blur");
+    var font = $("#pg-font");
+    var reset = $("#pg-reset");
+    var preview = $("#pg-preview");
+    if (!preview) return;
+
+    var defaults = { color: "#6366f1", radius: 16, spacing: 16, blur: 12, font: "Outfit" };
+
+    function apply() {
+      var c = color ? color.value : defaults.color;
+      var r = radius ? parseInt(radius.value, 10) : defaults.radius;
+      var s = spacing ? parseInt(spacing.value, 10) : defaults.spacing;
+      var b = blur ? parseInt(blur.value, 10) : defaults.blur;
+      var f = font ? font.value : defaults.font;
+
+      preview.style.setProperty("--pg-accent", c);
+      preview.style.setProperty("--pg-radius", r + "px");
+      preview.style.setProperty("--pg-blur", b + "px");
+
+      var card = preview.querySelector(".pg-card");
+      if (card) {
+        card.style.fontFamily = f === "system-ui" ? "system-ui" : '"' + f + '", system-ui';
+        card.style.padding = (s / 16 * 1.25).toFixed(2) + "rem";
+      }
+
+      var rv = $("#pg-radius-val");
+      var sv = $("#pg-spacing-val");
+      var bv = $("#pg-blur-val");
+      if (rv) rv.textContent = r + "px";
+      if (sv) sv.textContent = (s / 16).toFixed(2) + "rem";
+      if (bv) bv.textContent = b + "px";
+    }
+
+    [color, radius, spacing, blur, font].forEach(function (el) {
+      if (el) {
+        el.addEventListener("input", apply);
+        el.addEventListener("change", apply);
+      }
+    });
+
+    if (reset) {
+      reset.addEventListener("click", function () {
+        if (color) color.value = defaults.color;
+        if (radius) radius.value = defaults.radius;
+        if (spacing) spacing.value = defaults.spacing;
+        if (blur) blur.value = defaults.blur;
+        if (font) font.value = defaults.font;
+        apply();
+      });
+    }
+
+    apply();
+  })();
+
   (function year() {
     var el = $("#year");
     if (el) el.textContent = String(new Date().getFullYear());
