@@ -2403,11 +2403,12 @@ body::before {
   color: var(--text-muted);
 }
 
-#game-canvas {
+#game-canvas,
+#space-canvas {
   width: 100%;
   height: auto;
   border-radius: var(--radius-sm);
-  background: #0b0f1a;
+  background: #050816;
   border: 1px solid var(--border);
   touch-action: none;
 }
