@@ -1905,6 +1905,435 @@
     });
   })();
 
+  /* ----------------------------------------------------------------------
+     Automation Lab — workflow simulator + ROI calculator
+     ---------------------------------------------------------------------- */
+  (function automationLab() {
+    var lab = $("#lab");
+    if (!lab) return;
+
+    /* ---------- Tabs ---------- */
+    var tabs = $$(".lab__tab", lab);
+
+    function activateTab(tab, moveFocus) {
+      tabs.forEach(function (item) {
+        var selected = item === tab;
+        item.classList.toggle("is-active", selected);
+        item.setAttribute("aria-selected", selected ? "true" : "false");
+        if (selected) item.removeAttribute("tabindex");
+        else item.setAttribute("tabindex", "-1");
+
+        var panel = document.getElementById(item.getAttribute("aria-controls"));
+        if (panel) panel.hidden = !selected;
+      });
+      if (moveFocus) tab.focus();
+    }
+
+    tabs.forEach(function (tab, index) {
+      tab.addEventListener("click", function () {
+        activateTab(tab, false);
+      });
+
+      tab.addEventListener("keydown", function (e) {
+        var next = -1;
+        if (e.key === "ArrowRight") next = (index + 1) % tabs.length;
+        else if (e.key === "ArrowLeft") next = (index - 1 + tabs.length) % tabs.length;
+        else if (e.key === "Home") next = 0;
+        else if (e.key === "End") next = tabs.length - 1;
+
+        if (next > -1) {
+          e.preventDefault();
+          activateTab(tabs[next], true);
+        }
+      });
+    });
+
+    /* ---------- Workflow simulator ---------- */
+    var flow = $("#lab-flow");
+    var logEl = $("#lab-log");
+    var statusEl = $("#lab-status");
+    var stepsEl = $("#lab-steps");
+    var elapsedEl = $("#lab-elapsed");
+    var manualEl = $("#lab-manual");
+    var runBtn = $("#lab-run");
+    var resetBtn = $("#lab-reset");
+    var failInput = $("#lab-fail");
+
+    if (!flow || !logEl || !runBtn) return;
+
+    var nodes = $$(".lab__node", flow);
+    var STEP_MS = prefersReducedMotion ? 220 : 620;
+    var scenarios = {
+      support: {
+        label: "Support triage",
+        manual: 6,
+        nodes: [
+          { title: "Trigger", detail: "New Freshdesk ticket", log: "Ticket #4821 received" },
+          { title: "Classify", detail: "Intent + priority", log: "Billing · high priority" },
+          { title: "Enrich", detail: "Customer + SLA lookup", log: "Acme Corp · Enterprise · 4h SLA" },
+          { title: "Route", detail: "Assign to billing queue", log: "Assigned to @billing-team" },
+          { title: "Notify", detail: "Slack + email update", log: "Slack alert + customer reply queued" }
+        ]
+      },
+      lead: {
+        label: "Lead intake",
+        manual: 9,
+        nodes: [
+          { title: "Trigger", detail: "New form submission", log: "Demo request from acme.com" },
+          { title: "Enrich", detail: "Company + lead score", log: "Series B · 240 staff · score 87" },
+          { title: "Dedupe", detail: "Check CRM records", log: "No duplicate found in HubSpot" },
+          { title: "Route", detail: "Assign account owner", log: "Routed to @sales-emea" },
+          { title: "Follow-up", detail: "Sequence + task", log: "3-email sequence scheduled" }
+        ]
+      },
+      invoice: {
+        label: "Invoice approvals",
+        manual: 12,
+        nodes: [
+          { title: "Trigger", detail: "Invoice in inbox", log: "INV-2048 from supplier" },
+          { title: "Extract", detail: "OCR + line items", log: "14 line items parsed" },
+          { title: "Validate", detail: "PO + budget match", log: "PO-771 matched · within budget" },
+          { title: "Approve", detail: "Route for sign-off", log: "Sent to finance approver" },
+          { title: "Post", detail: "Sync + archive", log: "Posted to Xero · filed" }
+        ]
+      }
+    };
+
+    var currentScenario = "support";
+    var running = false;
+    var runToken = 0;
+    var runStart = 0;
+    var timers = [];
+    var ticker = null;
+
+    function pad(n) {
+      return (n < 10 ? "0" : "") + n;
+    }
+
+    function setStatus(state, label) {
+      statusEl.setAttribute("data-state", state);
+      statusEl.textContent = label;
+    }
+
+    function clearTimers() {
+      timers.forEach(function (id) {
+        window.clearTimeout(id);
+      });
+      timers = [];
+      if (ticker) {
+        window.clearInterval(ticker);
+        ticker = null;
+      }
+    }
+
+    function clearNodes() {
+      nodes.forEach(function (node) {
+        node.classList.remove("is-active", "is-done", "is-error");
+      });
+    }
+
+    function addLog(text, tone) {
+      var li = document.createElement("li");
+      li.className = "lab__log-entry" + (tone ? " is-" + tone : "");
+
+      var time = document.createElement("span");
+      time.className = "lab__log-time";
+      var seconds = runStart ? (Date.now() - runStart) / 1000 : 0;
+      time.textContent = "+" + Math.max(0, seconds).toFixed(2) + "s";
+
+      var message = document.createElement("span");
+      message.className = "lab__log-text";
+      message.textContent = text;
+
+      li.appendChild(time);
+      li.appendChild(message);
+      logEl.appendChild(li);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function clearLog() {
+      logEl.innerHTML = "";
+    }
+
+    function renderScenario() {
+      var data = scenarios[currentScenario];
+      nodes.forEach(function (node, index) {
+        var step = data.nodes[index];
+        if (!step) return;
+        var title = node.querySelector("strong");
+        var detail = node.querySelector("small");
+        if (title) title.textContent = step.title;
+        if (detail) detail.textContent = step.detail;
+      });
+    }
+
+    function resetSimulation(message) {
+      runToken++;
+      clearTimers();
+      running = false;
+      runStart = 0;
+      clearNodes();
+      clearLog();
+      addLog(message || "Ready. Choose a scenario and run the workflow.", "muted");
+      stepsEl.textContent = "0/" + nodes.length;
+      elapsedEl.textContent = "0.0s";
+      manualEl.textContent = "—";
+      setStatus("idle", "Idle");
+      flow.setAttribute("aria-busy", "false");
+      runBtn.disabled = false;
+      runBtn.textContent = "Run workflow";
+    }
+
+    function finishRun(state, label) {
+      runToken++;
+      clearTimers();
+      running = false;
+      elapsedEl.textContent = ((Date.now() - runStart) / 1000).toFixed(2) + "s";
+      flow.setAttribute("aria-busy", "false");
+      setStatus(state, label);
+      runBtn.disabled = false;
+      runBtn.textContent = "Run again";
+    }
+
+    function startRun() {
+      if (running) return;
+
+      var data = scenarios[currentScenario];
+      var failAt = failInput && failInput.checked ? 2 : -1;
+
+      clearTimers();
+      clearNodes();
+      clearLog();
+      running = true;
+      runStart = Date.now();
+      var token = ++runToken;
+
+      stepsEl.textContent = "0/" + nodes.length;
+      elapsedEl.textContent = "0.00s";
+      manualEl.textContent = "—";
+      setStatus("running", "Running");
+      flow.setAttribute("aria-busy", "true");
+      runBtn.disabled = true;
+      runBtn.textContent = "Running…";
+      addLog("Run started · " + data.label, "muted");
+
+      ticker = window.setInterval(function () {
+        if (token !== runToken) return;
+        elapsedEl.textContent = ((Date.now() - runStart) / 1000).toFixed(2) + "s";
+      }, 80);
+
+      data.nodes.forEach(function (step, index) {
+        timers.push(
+          window.setTimeout(function () {
+            if (token !== runToken) return;
+
+            nodes[index].classList.add("is-active");
+            addLog("Step " + pad(index + 1) + " · " + step.title + " — " + step.log, "");
+
+            timers.push(
+              window.setTimeout(function () {
+                if (token !== runToken) return;
+
+                nodes[index].classList.remove("is-active");
+
+                if (index === failAt) {
+                  nodes[index].classList.add("is-error");
+                  addLog(
+                    "Step " + pad(index + 1) + " · " + step.title + " failed — timeout after 2 retries",
+                    "err"
+                  );
+                  finishRun("error", "Failed");
+                  return;
+                }
+
+                nodes[index].classList.add("is-done");
+                stepsEl.textContent = index + 1 + "/" + nodes.length;
+
+                if (index === nodes.length - 1) {
+                  manualEl.textContent = data.manual + " min";
+                  addLog(
+                    "Workflow complete · " + data.manual + " min of manual work removed",
+                    "ok"
+                  );
+                  finishRun("done", "Complete");
+                }
+              }, Math.round(STEP_MS * 0.7))
+            );
+          }, 300 + index * STEP_MS)
+        );
+      });
+    }
+
+    $$(".lab__scenario", lab).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var key = btn.getAttribute("data-scenario");
+        if (!scenarios[key] || key === currentScenario) return;
+
+        currentScenario = key;
+        $$(".lab__scenario", lab).forEach(function (item) {
+          var active = item === btn;
+          item.classList.toggle("is-active", active);
+          item.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+
+        renderScenario();
+        resetSimulation("Ready · " + scenarios[key].label + " selected. Run the workflow.");
+      });
+    });
+
+    runBtn.addEventListener("click", startRun);
+    if (resetBtn) {
+      resetBtn.addEventListener("click", function () {
+        resetSimulation();
+      });
+    }
+
+    renderScenario();
+    resetSimulation();
+
+    /* ---------- ROI calculator ---------- */
+    var volume = $("#roi-volume");
+    var minutesInput = $("#roi-minutes");
+    var coverage = $("#roi-coverage");
+    var rate = $("#roi-rate");
+
+    if (!volume || !minutesInput || !coverage || !rate) return;
+
+    var FX = 56; // PHP per USD — illustrative demo rate
+    var currency = "PHP";
+    var phpRate = 450;
+    var bounds = {
+      PHP: { min: 150, max: 2000, step: 50 },
+      USD: { min: 5, max: 80, step: 1 }
+    };
+    var presets = {
+      support: { volume: 800, minutes: 8, coverage: 70, rate: 450 },
+      sales: { volume: 450, minutes: 12, coverage: 65, rate: 650 },
+      finance: { volume: 1200, minutes: 15, coverage: 80, rate: 800 }
+    };
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function number(value) {
+      return new Intl.NumberFormat("en-US").format(Math.round(value));
+    }
+
+    function money(value) {
+      return (currency === "PHP" ? "₱" : "$") + number(value);
+    }
+
+    function syncRateSlider() {
+      var b = bounds[currency];
+      rate.min = String(b.min);
+      rate.max = String(b.max);
+      rate.step = String(b.step);
+
+      var display = currency === "PHP" ? phpRate : phpRate / FX;
+      var snapped = Math.round(display / b.step) * b.step;
+      var value = clamp(snapped, b.min, b.max);
+      rate.value = String(value);
+      phpRate = currency === "PHP" ? value : value * FX;
+    }
+
+    function syncPresetState() {
+      var weight = currency === "PHP" ? 1 : FX;
+      var tolerance = (bounds[currency].step / 2) * weight;
+      $$(".lab__preset", lab).forEach(function (btn) {
+        var preset = presets[btn.getAttribute("data-preset")];
+        var active =
+          preset &&
+          Number(volume.value) === preset.volume &&
+          Number(minutesInput.value) === preset.minutes &&
+          Number(coverage.value) === preset.coverage &&
+          Math.abs(phpRate - preset.rate) <= tolerance;
+        btn.classList.toggle("is-active", active);
+      });
+    }
+
+    function updateROI() {
+      var monthlyItems = Number(volume.value);
+      var manualMinutes = Number(minutesInput.value);
+      var coverageRatio = Number(coverage.value) / 100;
+      var hourly = currency === "PHP" ? phpRate : phpRate / FX;
+
+      var manualHours = (monthlyItems * manualMinutes) / 60;
+      var savedHours = manualHours * coverageRatio;
+      var remainingHours = Math.max(0, manualHours - savedHours);
+      var savedYear = savedHours * 12;
+
+      $("#roi-volume-out").textContent = number(monthlyItems);
+      $("#roi-minutes-out").textContent = manualMinutes + " min";
+      $("#roi-coverage-out").textContent = Math.round(coverageRatio * 100) + "%";
+      $("#roi-rate-out").textContent = money(hourly);
+
+      $("#roi-hours").textContent = number(savedHours);
+      $("#roi-year").textContent = number(savedYear);
+      $("#roi-fte").textContent = (savedHours / 160).toFixed(2);
+      $("#roi-cost").textContent = money(savedYear * hourly);
+
+      $("#roi-manual-h").textContent = number(manualHours) + "h";
+      $("#roi-auto-h").textContent = number(remainingHours) + "h";
+      $("#roi-bar-manual").style.width = "100%";
+      $("#roi-bar-auto").style.width =
+        (manualHours > 0 ? (remainingHours / manualHours) * 100 : 0) + "%";
+
+      syncPresetState();
+    }
+
+    [volume, minutesInput, coverage].forEach(function (input) {
+      input.addEventListener("input", updateROI);
+    });
+
+    rate.addEventListener("input", function () {
+      phpRate = currency === "PHP" ? Number(rate.value) : Number(rate.value) * FX;
+      updateROI();
+    });
+
+    $$(".lab__currency-btn", lab).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var next = btn.getAttribute("data-currency");
+        if (!bounds[next] || next === currency) return;
+
+        currency = next;
+        $$(".lab__currency-btn", lab).forEach(function (item) {
+          var active = item === btn;
+          item.classList.toggle("is-active", active);
+          item.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+
+        syncRateSlider();
+        updateROI();
+      });
+    });
+
+    $$(".lab__preset", lab).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var preset = presets[btn.getAttribute("data-preset")];
+        if (!preset) return;
+
+        volume.value = String(preset.volume);
+        minutesInput.value = String(preset.minutes);
+        coverage.value = String(preset.coverage);
+        phpRate = preset.rate;
+        syncRateSlider();
+        updateROI();
+      });
+    });
+
+    var cta = $("#roi-cta");
+    if (cta) {
+      cta.addEventListener("click", function () {
+        var subject = $("#cf-subject");
+        if (subject) subject.value = "Workflow automation";
+      });
+    }
+
+    syncRateSlider();
+    updateROI();
+  })();
+
   (function year() {
     var el = $("#year");
     if (el) el.textContent = String(new Date().getFullYear());

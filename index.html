@@ -117,6 +117,7 @@
           <li><a href="#skills" class="nav__link">Skills</a></li>
           <li><a href="#experience" class="nav__link">Experience</a></li>
           <li><a href="#projects" class="nav__link">Projects</a></li>
+          <li><a href="#lab" class="nav__link">Lab</a></li>
           <li><a href="#playground" class="nav__link">Playground</a></li>
           <li><a href="#terminal" class="nav__link">Terminal</a></li>
           <li><a href="#contact" class="nav__link">Contact</a></li>
@@ -795,6 +796,240 @@
         </div>
       </section>
 
+      <!-- ================= AUTOMATION LAB ================= -->
+      <section class="section" id="lab">
+        <div class="container">
+          <header class="section__head reveal">
+            <p class="section__eyebrow">Interactive proof</p>
+            <h2 class="section__title">Automation Lab</h2>
+            <p class="section__lede">
+              Run a workflow, watch each step execute, then estimate the hours it gives back.
+              This is the kind of system I build every day.
+            </p>
+          </header>
+
+          <div class="lab reveal">
+            <div class="lab__tabs" role="tablist" aria-label="Automation Lab tools">
+              <button
+                class="lab__tab is-active"
+                id="lab-tab-flow"
+                type="button"
+                role="tab"
+                aria-selected="true"
+                aria-controls="lab-panel-flow"
+              >
+                Workflow simulator
+              </button>
+              <button
+                class="lab__tab"
+                id="lab-tab-roi"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="lab-panel-roi"
+                tabindex="-1"
+              >
+                ROI calculator
+              </button>
+            </div>
+
+            <div class="lab__panel" id="lab-panel-flow" role="tabpanel" aria-labelledby="lab-tab-flow">
+              <div class="lab__toolbar">
+                <div class="lab__scenarios" role="group" aria-label="Workflow scenario">
+                  <button class="lab__scenario is-active" type="button" data-scenario="support" aria-pressed="true">
+                    Support triage
+                  </button>
+                  <button class="lab__scenario" type="button" data-scenario="lead" aria-pressed="false">
+                    Lead intake
+                  </button>
+                  <button class="lab__scenario" type="button" data-scenario="invoice" aria-pressed="false">
+                    Invoice approvals
+                  </button>
+                </div>
+                <label class="lab__switch">
+                  <input type="checkbox" id="lab-fail">
+                  <span class="lab__switch-track" aria-hidden="true"></span>
+                  <span>Simulate a failure</span>
+                </label>
+              </div>
+
+              <ol class="lab__flow" id="lab-flow" aria-label="Workflow steps" aria-busy="false">
+                <li class="lab__node" data-node="0">
+                  <span class="lab__node-top">
+                    <span class="lab__node-index">01</span>
+                    <span class="lab__node-dot" aria-hidden="true"></span>
+                  </span>
+                  <strong>Trigger</strong>
+                  <small>New Freshdesk ticket</small>
+                </li>
+                <li class="lab__node" data-node="1">
+                  <span class="lab__node-top">
+                    <span class="lab__node-index">02</span>
+                    <span class="lab__node-dot" aria-hidden="true"></span>
+                  </span>
+                  <strong>Classify</strong>
+                  <small>Intent + priority</small>
+                </li>
+                <li class="lab__node" data-node="2">
+                  <span class="lab__node-top">
+                    <span class="lab__node-index">03</span>
+                    <span class="lab__node-dot" aria-hidden="true"></span>
+                  </span>
+                  <strong>Enrich</strong>
+                  <small>Customer + SLA lookup</small>
+                </li>
+                <li class="lab__node" data-node="3">
+                  <span class="lab__node-top">
+                    <span class="lab__node-index">04</span>
+                    <span class="lab__node-dot" aria-hidden="true"></span>
+                  </span>
+                  <strong>Route</strong>
+                  <small>Assign to billing queue</small>
+                </li>
+                <li class="lab__node" data-node="4">
+                  <span class="lab__node-top">
+                    <span class="lab__node-index">05</span>
+                    <span class="lab__node-dot" aria-hidden="true"></span>
+                  </span>
+                  <strong>Notify</strong>
+                  <small>Slack + email update</small>
+                </li>
+              </ol>
+
+              <div class="lab__console">
+                <div class="lab__console-head">
+                  <span>run.log</span>
+                  <span class="lab__status" id="lab-status" data-state="idle" role="status">Idle</span>
+                </div>
+                <ol class="lab__log" id="lab-log" aria-live="polite" aria-label="Workflow log">
+                  <li class="lab__log-entry">
+                    <span class="lab__log-time">+0.00s</span>
+                    <span class="lab__log-text">Ready. Choose a scenario and run the workflow.</span>
+                  </li>
+                </ol>
+              </div>
+
+              <div class="lab__footer">
+                <div class="lab__metrics">
+                  <span class="lab__metric">
+                    <span class="lab__metric-value" id="lab-steps">0/5</span>
+                    <small>steps</small>
+                  </span>
+                  <span class="lab__metric">
+                    <span class="lab__metric-value" id="lab-elapsed">0.0s</span>
+                    <small>elapsed</small>
+                  </span>
+                  <span class="lab__metric">
+                    <span class="lab__metric-value" id="lab-manual">—</span>
+                    <small>manual work removed</small>
+                  </span>
+                </div>
+                <div class="lab__actions">
+                  <button class="btn btn--primary" id="lab-run" type="button">Run workflow</button>
+                  <button class="btn btn--ghost" id="lab-reset" type="button">Reset</button>
+                </div>
+              </div>
+
+              <p class="lab__hint">Demo data. Step timings and saved time are illustrative.</p>
+            </div>
+
+            <div class="lab__panel" id="lab-panel-roi" role="tabpanel" aria-labelledby="lab-tab-roi" hidden>
+              <div class="lab__roi">
+                <div class="lab__roi-controls">
+                  <div class="lab__roi-top">
+                    <div class="lab__currency" role="group" aria-label="Currency">
+                      <button class="lab__currency-btn is-active" type="button" data-currency="PHP" aria-pressed="true">
+                        ₱ PHP
+                      </button>
+                      <button class="lab__currency-btn" type="button" data-currency="USD" aria-pressed="false">
+                        $ USD
+                      </button>
+                    </div>
+                    <div class="lab__presets" role="group" aria-label="Team presets">
+                      <button class="lab__preset" type="button" data-preset="support">Support</button>
+                      <button class="lab__preset" type="button" data-preset="sales">Sales</button>
+                      <button class="lab__preset" type="button" data-preset="finance">Finance</button>
+                    </div>
+                  </div>
+
+                  <div class="lab__field">
+                    <div class="lab__field-head">
+                      <label for="roi-volume">Items per month</label>
+                      <output id="roi-volume-out" for="roi-volume">800</output>
+                    </div>
+                    <input type="range" id="roi-volume" min="100" max="5000" step="50" value="800">
+                  </div>
+
+                  <div class="lab__field">
+                    <div class="lab__field-head">
+                      <label for="roi-minutes">Manual minutes per item</label>
+                      <output id="roi-minutes-out" for="roi-minutes">8 min</output>
+                    </div>
+                    <input type="range" id="roi-minutes" min="1" max="30" step="1" value="8">
+                  </div>
+
+                  <div class="lab__field">
+                    <div class="lab__field-head">
+                      <label for="roi-coverage">Workflow coverage</label>
+                      <output id="roi-coverage-out" for="roi-coverage">70%</output>
+                    </div>
+                    <input type="range" id="roi-coverage" min="10" max="100" step="5" value="70">
+                  </div>
+
+                  <div class="lab__field">
+                    <div class="lab__field-head">
+                      <label for="roi-rate">Loaded hourly cost</label>
+                      <output id="roi-rate-out" for="roi-rate">₱450</output>
+                    </div>
+                    <input type="range" id="roi-rate" min="150" max="2000" step="50" value="450">
+                  </div>
+                </div>
+
+                <div class="lab__results" aria-live="polite">
+                  <div class="lab__result-hero">
+                    <span class="lab__result-value" id="roi-hours">75</span>
+                    <span class="lab__result-label">hours saved / month</span>
+                  </div>
+
+                  <div class="lab__result-grid">
+                    <div class="lab__result">
+                      <span class="lab__result-value" id="roi-year">896</span>
+                      <small>hours / year</small>
+                    </div>
+                    <div class="lab__result">
+                      <span class="lab__result-value" id="roi-fte">0.47</span>
+                      <small>FTE equivalent</small>
+                    </div>
+                    <div class="lab__result">
+                      <span class="lab__result-value" id="roi-cost">₱403,200</span>
+                      <small>annual cost saved</small>
+                    </div>
+                  </div>
+
+                  <div class="lab__bars" aria-hidden="true">
+                    <div class="lab__bar-row">
+                      <span>Manual</span>
+                      <div class="lab__bar"><i id="roi-bar-manual"></i></div>
+                      <b id="roi-manual-h">107h</b>
+                    </div>
+                    <div class="lab__bar-row">
+                      <span>Automated</span>
+                      <div class="lab__bar"><i class="is-auto" id="roi-bar-auto"></i></div>
+                      <b id="roi-auto-h">32h</b>
+                    </div>
+                  </div>
+
+                  <p class="lab__note">
+                    Illustrative estimate. Assumes the selected coverage applies to every item in the volume.
+                  </p>
+                  <a class="btn btn--primary" id="roi-cta" href="#contact">Talk about your workflow</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ================= TERMINAL ================= -->
     <section class="section section--alt" id="terminal">
       <div class="container">
@@ -967,6 +1202,7 @@
                   <option>Fullstack / web development</option>
                   <option>Mobile app development</option>
                   <option>UX/UI design</option>
+                  <option>Workflow automation</option>
                   <option>Graphic design &amp; branding</option>
                   <option>2D / 3D animation</option>
                   <option>Something else</option>
