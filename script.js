@@ -1140,6 +1140,17 @@
               openDialog(im, btn);
             }
             break;
+          case "aether":
+            var im2 = document.querySelector("#iframe-modal");
+            var iframe2 = document.querySelector("#game-iframe");
+            var iTitle2 = document.querySelector("#iframe-title");
+            if (im2 && iframe2) {
+              if (iTitle2) iTitle2.textContent = "Aether Bastion: Ascendant";
+              iframe2.title = "Aether Bastion tower defense game";
+              iframe2.src = "aether_bastion_tower_defense.html";
+              openDialog(im2, btn);
+            }
+            break;
         }
       });
     });

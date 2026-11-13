@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#0b1a3a"/>
+      <stop offset="100%" stop-color="#040710"/>
+    </radialGradient>
+    <linearGradient id="beam" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#e879f9"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" fill="url(#bg)"/>
+  <!-- grid -->
+  <g stroke="rgba(56,189,248,0.12)" stroke-width="1">
+    <path d="M0 100 H800 M0 200 H800 M0 300 H800 M0 400 H800 M0 500 H800 M0 600 H800 M0 700 H800"/>
+    <path d="M100 0 V800 M200 0 V800 M300 0 V800 M400 0 V800 M500 0 V800 M600 0 V800 M700 0 V800"/>
+  </g>
+  <!-- path -->
+  <path d="M0 400 H250 Q320 400 320 300 V200 Q320 120 420 120 H800" stroke="#f472b6" stroke-width="14" fill="none" opacity="0.55"/>
+  <path d="M0 400 H250 Q320 400 320 300 V200 Q320 120 420 120 H800" stroke="#f9a8d4" stroke-width="4" fill="none" opacity="0.9"/>
+  <!-- towers -->
+  <g>
+    <circle cx="200" cy="260" r="34" fill="#0e1a33" stroke="#22d3ee" stroke-width="3"/>
+    <circle cx="200" cy="260" r="12" fill="#22d3ee"/>
+    <circle cx="470" cy="360" r="34" fill="#0e1a33" stroke="#fb923c" stroke-width="3"/>
+    <circle cx="470" cy="360" r="12" fill="#fb923c"/>
+    <circle cx="600" cy="520" r="34" fill="#0e1a33" stroke="#e879f9" stroke-width="3"/>
+    <circle cx="600" cy="520" r="12" fill="#e879f9"/>
+    <circle cx="330" cy="560" r="34" fill="#0e1a33" stroke="#818cf8" stroke-width="3"/>
+    <circle cx="330" cy="560" r="12" fill="#818cf8"/>
+  </g>
+  <!-- enemies -->
+  <g fill="#34d399">
+    <circle cx="120" cy="400" r="11"/>
+    <circle cx="160" cy="400" r="11"/>
+    <circle cx="90" cy="400" r="11"/>
+  </g>
+  <g fill="#f97316">
+    <circle cx="320" cy="200" r="15"/>
+  </g>
+  <!-- title -->
+  <text x="400" y="700" text-anchor="middle" font-family="Orbitron, sans-serif" font-size="46" font-weight="900" fill="url(#beam)">AETHER BASTION</text>
+  <text x="400" y="745" text-anchor="middle" font-family="Inter, sans-serif" font-size="22" fill="#94a3b8">ASCENDANT — TOWER DEFENSE</text>
+</svg>
