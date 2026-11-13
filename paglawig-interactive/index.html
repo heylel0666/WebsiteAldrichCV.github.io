@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>PAGLAWIG — Featured Shipwreck Sites</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<div id="boot" class="boot"><div class="boot-in">
+  <div class="boot-wave"></div>
+  <p class="boot-t">PAGLAWIG</p>
+</div></div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 48 48"><path d="M24 3c-4 6-7 9-7 15v10h14V18c0-6-3-9-7-15z"/><path d="M10 28h28l-4 6H14z"/><path d="M6 36c4 3 8 4 12 4s8-1 12-4c-4 5-8 7-12 7s-8-2-12-7z"/></svg>
+    </span>
+    <span class="brand-txt">
+      <b data-i18n="exhibition">PAGLAWIG</b>
+      <i data-i18n="exhibitionSub">Cultural Movement Across the Seas</i>
+    </span>
+  </div>
+
+  <h1 class="topbar-title" id="screenTitle">Featured Shipwreck Sites</h1>
+
+  <div class="topbar-tools">
+    <div class="lang" role="group" aria-label="Language">
+      <button class="lang-b is-on" data-lang="en">EN</button>
+      <button class="lang-b" data-lang="ceb">CEB</button>
+    </div>
+    <button class="icon-b" id="soundBtn" title="Sound on/off" aria-label="Toggle sound" aria-pressed="true">
+      <svg viewBox="0 0 24 24" class="ic-on"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+      <svg viewBox="0 0 24 24" class="ic-off"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9.5l4 5M21 9.5l-4 5"/></svg>
+    </button>
+    <button class="icon-b" id="homeBtn" title="All sites" aria-label="Show all sites">
+      <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="stage">
+
+  <!-- ============ LEFT INSTRUMENT RAIL ============
+       The Philippines is portrait and this panel is landscape, so fitting the
+       country leaves roughly half the map width as empty sea. Rather than
+       shrink the map, that dead space became this rail: periods, a jump-to
+       search, and the map instruments. -->
+  <aside class="rail" id="rail">
+    <h2 class="rail-h" id="railHead">Periods</h2>
+    <!-- this one element is moved into the map when the rail is too narrow to show -->
+    <div class="legend" id="legend" role="group" aria-labelledby="railHead"></div>
+
+    <div class="rail-find">
+      <label class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>
+        <input id="railSearch" type="search" placeholder="Jump to a wreck" autocomplete="off" aria-label="Jump to a shipwreck">
+      </label>
+      <div class="rail-results" id="railResults" hidden></div>
+    </div>
+
+    <div class="rail-foot">
+      <div class="compass" id="compass" aria-hidden="true">
+        <svg viewBox="0 0 84 84">
+          <circle class="c-ring" cx="42" cy="42" r="33"/>
+          <circle class="c-ring2" cx="42" cy="42" r="25"/>
+          <g class="c-rose">
+            <path class="c-n"  d="M42 9 L48 42 L42 36 L36 42 Z"/>
+            <path class="c-s"  d="M42 75 L36 42 L42 48 L48 42 Z"/>
+            <path class="c-e"  d="M75 42 L42 36 L48 42 L42 48 Z"/>
+            <path class="c-w"  d="M9 42 L42 48 L36 42 L42 36 Z"/>
+          </g>
+        </svg>
+        <span class="c-label">N</span>
+      </div>
+      <div class="scalebar" id="scalebar" aria-hidden="true">
+        <div class="sb-bar"><i></i><i></i><i></i><i></i></div>
+        <div class="sb-txt"><span id="sbKm">—</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAP ============ -->
+  <section class="mapwrap" id="mapwrap">
+    <div class="mapstage" id="mapstage">
+      <canvas class="seafloor" id="seafloor" aria-hidden="true"></canvas>
+      <div class="caustics" aria-hidden="true"></div>
+      <svg id="phmap" viewBox="0 0 1000 1745.8" preserveAspectRatio="xMidYMid meet" aria-label="Map of the Philippines">
+        <g id="zoomLayer">
+          <path id="landPath" fill="#FAF4E4" stroke="#3E86BE" stroke-width="1.7" stroke-linejoin="round"/>
+          <g id="provLayer"></g>
+        </g>
+      </svg>
+      <svg id="pinOverlay" class="pin-overlay" role="group" aria-label="Shipwreck locations">
+        <defs>
+          <filter id="pinShadow" x="-70%" y="-40%" width="240%" height="200%">
+            <feDropShadow dx="0" dy="1.6" stdDeviation="1.8" flood-color="#0b1030" flood-opacity=".38"/>
+          </filter>
+        </defs>
+      </svg>
+        <div class="sea-grain" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <div class="mapctl">
+      <button class="zbtn" id="zin"  aria-label="Zoom in">+</button>
+      <button class="zbtn" id="zout" aria-label="Zoom out">&minus;</button>
+      <button class="zbtn zreset" id="zreset" aria-label="Reset map" title="Fit whole map">
+        <svg viewBox="0 0 24 24"><path d="M4 9.5V5.6A1.6 1.6 0 0 1 5.6 4h3.9M14.5 4h3.9A1.6 1.6 0 0 1 20 5.6v3.9M20 14.5v3.9a1.6 1.6 0 0 1-1.6 1.6h-3.9M9.5 20H5.6A1.6 1.6 0 0 1 4 18.4v-3.9"/></svg>
+      </button>
+    </div>
+
+<div class="maphint" id="maphint"><span></span></div>
+  </section>
+
+  <!-- ============ SIDE PANEL ============ -->
+  <aside class="panel" id="panel">
+    <nav class="crumbs" id="crumbs"></nav>
+    <div class="panel-scroll" id="panelScroll">
+
+      <!-- period chooser -->
+      <section class="view" data-view="home">
+        <div class="view-head">
+          <h2 data-i18n="screenTitle">Featured Shipwreck Sites</h2>
+          <p class="lede" id="homeLede"></p>
+        </div>
+        <div class="period-list" id="periodList"></div>
+
+        <div class="finder">
+          <div class="finder-head">
+            <h3 class="sub">All shipwrecks</h3>
+            <label class="search">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>
+              <input id="siteSearch" type="search" placeholder="Search all 19 sites" autocomplete="off" aria-label="Search shipwrecks">
+            </label>
+          </div>
+          <div class="all-list" id="allList"></div>
+          <p class="finder-empty" id="finderEmpty" hidden>No wreck matches that search.</p>
+        </div>
+
+        <div class="home-stat" id="homeStat"></div>
+
+        <button class="tour-cta" id="startTour">
+          <span class="tour-cta-ico">&#9654;</span>
+          <span class="tour-cta-tx"><b>Start the guided tour</b><i>Six wrecks, about four minutes</i></span>
+        </button>
+      </section>
+
+      <section class="view" data-view="tour" hidden>
+        <div class="tour-wrap">
+          <span class="tour-kicker" id="tourStep">1 / 6</span>
+          <h2 class="tour-title" id="tourTitle"></h2>
+          <p class="tour-blurb" id="tourBlurb"></p>
+          <div class="tour-dots" id="tourDots"></div>
+          <blockquote class="tour-line" id="tourLine"></blockquote>
+          <div class="tour-ctl">
+            <button class="tbtn" id="tourPrev">&#8249; <span>Previous</span></button>
+            <button class="tbtn tprimary" id="tourNext">Next stop</button>
+            <button class="tbtn" id="tourExit">Leave tour</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- period detail -->
+      <section class="view" data-view="period" hidden>
+        <div class="phero" id="pHero">
+          <img id="pHeroImg" alt="" />
+          <div class="phero-txt">
+            <span class="phero-range" id="pRange"></span>
+            <h2 id="pName"></h2>
+            <p id="pNameCeb"></p>
+          </div>
+        </div>
+        <div class="prose" id="pBody"></div>
+        <h3 class="sub" id="pShipsLbl">Shipwrecks</h3>
+        <div class="ship-list" id="shipList"></div>
+      </section>
+
+      <!-- site detail -->
+      <section class="view" data-view="site" hidden>
+        <div class="shero" id="shero">
+          <img id="sHeroImg" alt="" />
+          <div class="shero-fade"></div>
+          <div class="shero-txt">
+            <span class="shero-loc" id="sLoc"></span>
+            <h2 id="sName"></h2>
+            <p class="shero-ceb" id="sNameCeb"></p>
+          </div>
+        </div>
+        <div class="factbar" id="sFacts"></div>
+        <div class="prose" id="sBody"></div>
+        <h3 class="sub" id="sGalLbl">Photographs</h3>
+<div class="gallery" id="sGallery"></div>
+      </section>
+
+    </div>
+  </aside>
+</main>
+
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lb-close" id="lbClose" aria-label="Close">&times;</button>
+  <button class="lb-nav lb-prev" id="lbPrev" aria-label="Previous">&#8249;</button>
+  <figure class="lb-fig">
+    <div class="lb-stage" id="lbStage"><img id="lbImg" alt=""></div>
+    <figcaption class="lb-meta">
+      <span id="lbCap"></span>
+      <span class="lb-note" id="lbNote"></span>
+    </figcaption>
+  </figure>
+  <button class="lb-nav lb-next" id="lbNext" aria-label="Next">&#8250;</button>
+  <div class="lb-count" id="lbCount"></div>
+  <button class="lb-zoomhint" id="lbZoomHint">Pinch or double-tap to zoom</button>
+</div>
+
+<div class="tip" id="tip"></div>
+
+<!-- attract / idle card for the unattended kiosk -->
+<div class="attract" id="attract" hidden>
+  <div class="attract-in">
+    <span class="attract-rule"></span>
+    <h2 class="attract-title" id="attractTitle">PAGLAWIG</h2>
+    <p class="attract-sub" id="attractSub">Cultural Movement Across the Seas</p>
+    <p class="attract-prompt" id="attractPrompt">Touch the screen to explore</p>
+  </div>
+</div>
+
+<!-- ============ PIN EDITOR (maintenance mode: ?edit=1 or Ctrl+Shift+E) ============ -->
+<div class="editbar" id="editbar" hidden>
+  <div class="eb-head">
+    <span class="eb-dot"></span>
+    <b>Pin Editor</b>
+    <span class="eb-sub">drag pins &middot; arrow keys to nudge</span>
+    <button class="eb-x" id="ebClose" title="Exit (Esc)">&times;</button>
+  </div>
+  <div class="eb-body">
+    <label class="eb-field">
+      <span>Site</span>
+      <select id="ebSite"></select>
+    </label>
+    <label class="eb-field eb-lat">
+      <span>Latitude</span>
+      <input id="ebLat" type="number" step="0.0001" inputmode="decimal">
+    </label>
+    <label class="eb-field eb-lat">
+      <span>Longitude</span>
+      <input id="ebLon" type="number" step="0.0001" inputmode="decimal">
+    </label>
+    <div class="eb-actions">
+      <button id="ebReset" class="eb-btn">Reset pin</button>
+      <button id="ebResetAll" class="eb-btn">Reset all</button>
+      <button id="ebUsage" class="eb-btn">Export usage CSV</button>
+      <button id="ebExport" class="eb-btn eb-primary">Save pins.js</button>
+    </div>
+    <p class="eb-status" id="ebStatus"></p>
+    <p class="eb-help">
+      Zoom in for precision. After saving <b>pins.js</b>, copy it into the
+      <b>js/</b> folder to apply these positions to every kiosk.
+    </p>
+  </div>
+  <div class="eb-readout" id="ebReadout"></div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/pins.js" onerror="this.remove()"></script>
+<script src="js/mapdata.js"></script>
+<script src="js/water.js"></script>
+<script src="js/ambience.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

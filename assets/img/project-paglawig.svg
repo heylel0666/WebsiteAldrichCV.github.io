@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="75%">
+      <stop offset="0%" stop-color="#1e3a5f"/>
+      <stop offset="100%" stop-color="#0b1030"/>
+    </radialGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3E86BE"/>
+      <stop offset="100%" stop-color="#0b1030"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" fill="url(#bg)"/>
+  <!-- waves -->
+  <path d="M0 520 Q200 470 400 520 T800 520 V800 H0 Z" fill="url(#sea)" opacity="0.55"/>
+  <path d="M0 560 Q200 510 400 560 T800 560 V800 H0 Z" fill="#0b1030" opacity="0.4"/>
+  <!-- map silhouette (Philippines-ish) -->
+  <g fill="#FAF4E4" opacity="0.9">
+    <path d="M360 260 Q380 230 400 260 L410 300 Q400 340 370 330 Z"/>
+    <path d="M420 300 Q450 280 470 320 L460 380 Q430 390 420 360 Z"/>
+    <path d="M330 360 Q360 340 380 380 L370 440 Q340 450 320 420 Z"/>
+    <path d="M470 420 Q500 400 520 440 L510 500 Q480 510 460 480 Z"/>
+  </g>
+  <!-- pins -->
+  <g>
+    <circle cx="385" cy="290" r="12" fill="#f43f5e"/>
+    <circle cx="445" cy="340" r="12" fill="#f59e0b"/>
+    <circle cx="350" cy="400" r="12" fill="#22c55e"/>
+    <circle cx="490" cy="460" r="12" fill="#38bdf8"/>
+  </g>
+  <!-- title -->
+  <text x="400" y="680" text-anchor="middle" font-family="serif" font-size="52" font-weight="700" fill="#FAF4E4">PAGLAWIG</text>
+  <text x="400" y="725" text-anchor="middle" font-family="sans-serif" font-size="22" fill="#94a3b8">Featured Shipwreck Sites · Interactive Museum</text>
+  <text x="400" y="760" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#64748b">Bilingual EN / CEB · Touch kiosk</text>
+</svg>

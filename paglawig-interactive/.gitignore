@@ -1,0 +1,14 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# logs
+*.log
+npm-debug.log*
+
+# Nothing is generated from a build step - the app runs straight from index.html.
+# Local machine overrides of pin positions (written by the in-app Pin Editor)
+# stay in the browser, not in the repo.
